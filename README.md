@@ -1,0 +1,1 @@
+AdaBoost using decision trees and bag of words algorithm realization for filtering spam
