@@ -1,8 +1,7 @@
 # -*- coding: UTF-8 -*-
 import codecs
 import glob
-
-data_file = "network.tsv"
+import random
 
 def standart_string (_str):
     '''
@@ -32,6 +31,7 @@ def get_words_from_folder(folder_name):
 
 def dictionary(words, lenght):
     '''
+
     :param words: list of all words of which we do Dictionary
     :param lenght: max len of dictionary
     :return: sorted list of words
@@ -45,6 +45,11 @@ def dictionary(words, lenght):
     print ("количество всех слов")
     print (len(dic))
     b = sorted(dic.items(), key=lambda item: item[1], reverse=True)
+    for i in range(len(b)):
+        if b[i][1] < 10:
+            b[i] = ()
+    b = [x for x in b if x]
+    print("Количество слов, которые встречаются чащем, чем 10 раз = " + str(len(b)))
     if (len(b) < lenght):
         print ("Количество слов меньше, чем требуемая длина словаря")
         print ("Длина словаря="+str(len(b)))
@@ -67,27 +72,26 @@ def gen_vector(word, dic):
             vector[i] = 1
     return vector
 
-def text2vectors(text, dic, max_len):
+def text2vectors(text, dic):
     '''
     функция делает вектора для текстаб по словарю указанной длинны
     если текст короткий - он дополнится нулевыми векторами
     если длиннее, то обрежется
     :param text:  data string
     :param dic:     dic with popular word, making before
-    :param max_len: max len of all texts
     :return: needed quantity vectors
     '''
     vectors = []
-    zero = [0]*len(dic)
     text = standart_string(text)
     words = text.split(" ")
-    for i in range(len(words)):
-        vect = gen_vector(words[i], dic)
-        vectors.append(vect)
-    while(len(vectors) < max_len):
-        vectors.append(zero)
-    vectors = vectors[0:max_len]
-    return vectors
+    len_vector = len(dic)
+    vector = [0] * len_vector
+    for i in range(len_vector):
+        if dic[i] in text:
+            vector[i] = 1
+    for i in range(len_vector):
+        vector[i] = vector[i] / len(words)
+    return vector
 
 def get_words(text):
     #берем текст, удаляем лишнее и режем на слова
@@ -95,7 +99,7 @@ def get_words(text):
     words = text.split(" ")
     return words
 
-path = "/home/nina/Загрузки/hem/*.txt"
+#path = "/home/nina/Загрузки/hem/*.txt"
 def get_all_words(path_to_folder):
     #функция получает на вход путь к папке с файлами
     #функция возвращает список всех слов из всех файлов
@@ -105,11 +109,11 @@ def get_all_words(path_to_folder):
     quantity_of_files = len(files)
     all_texts = []
     for i in range(quantity_of_files):  # список всех текстов в папке
-        in_file = open(files[i])
-        str = ''
-        for c in in_file:
-            str = str + c
-        all_texts.append(str)
+        in_file = codecs.open(files[i], "r" ,encoding='utf-8', errors='ignore')
+        #print (files[i])
+        str1 = in_file.read()
+        str1.encode("utf-8")
+        all_texts.append(str1)
     all_words = []
     for i in range(len(all_texts)):
         words_one_text = get_words(all_texts[i])
@@ -117,11 +121,23 @@ def get_all_words(path_to_folder):
     #print (all_words[0:10])
     return all_words
 
-get_all_words(path)
+#get_all_words(path)
 
-def get_vectors_from_path(path, dic, max_len):
+def get_vectors_from_path(path, dic):
     #функция получает путь к файлу с текстом и словарь
     #функция делает список векторов для текста заданного длинны
-    data = codecs.open(path, "r", "utf-8")
-    vectors = text2vectors(data,dic, max_len)
-    return vectors
+    data = codecs.open(path, "r", encoding='utf-8', errors='ignore')
+    data_new = data.read()
+    vector = text2vectors(data_new, dic)
+    return vector
+
+def pell_mell(a,b):
+    #mix list composed for 2 vectors
+    c=zip(a,b)
+    random.shuffle(c)
+    new_a=[]
+    new_b=[]
+    for i in range(len(a)):
+        new_a.append(c[i][0])
+        new_b.append(c[i][1])
+    return new_a, new_b
