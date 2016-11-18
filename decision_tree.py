@@ -17,10 +17,12 @@ class Node:
         self.klass = klass
 
 
+
 class DecisionTree():
-    def __init__(self, max_depth=2):
+    def __init__(self, max_depth=2, min_samples=0):
         self.root = Node()
         self.max_depth = max_depth
+        self.min_samples = min_samples
 
 
     def train(self, X, y, weights):
@@ -32,7 +34,7 @@ class DecisionTree():
         '''
         dataset = make_dataset(X, y)
         current_depth = 0
-        split(self.root, dataset, self.max_depth, current_depth + 1, weights)
+        split(self.root, dataset, self.max_depth, self.min_samples, current_depth + 1, weights)
 
 
     def classify(self, data):
@@ -81,7 +83,7 @@ def predict(node, row):
 
 
 ### Splitting
-def split(node, dataset, max_depth, current_depth, weights):
+def split(node, dataset, max_depth, min_samples, current_depth, weights):
     '''
     :param node: Node
     :param dataset: array of dictionaries like { "features": list_of_features, "class": label } -> np.array([..., { "features": X[i], "class": Y[i] }, ...])
@@ -89,9 +91,10 @@ def split(node, dataset, max_depth, current_depth, weights):
     :param weights: array of numbers - weights of each sample in dataset
     :return:
     '''
-    split_index, split_value, left_subset, right_subset = get_split(dataset)
-    if not left_subset or not right_subset:
+    split_index, split_value, left_subset, right_subset, left_weights, right_weights = get_split(dataset)
+    if left_subset.shape[0] < min_samples or right_subset.shape[0] < min_samples:
         node.terminal = True
+        node.klass = belong_to_klass(dataset)
         return
     if depth >= max_depth:
         node.split_index = split_index
@@ -101,8 +104,8 @@ def split(node, dataset, max_depth, current_depth, weights):
         return
     node.left = Node()
     node.right = Node()
-    split(node.left, left_subset, current_depth + 1, weights)
-    split(node.right, right_subset, current_depth + 1, weights)
+    split(node.left, left_subset, current_depth + 1, min_samples, left_weights)
+    split(node.right, right_subset, current_depth + 1, min_samples, right_weights)
 
 
 def test_split(dataset, feature_index, value_to_compare, weights):
@@ -147,7 +150,7 @@ def get_split(dataset):
                 best_left, best_right = left_subset, right_subset
                 best_left_weights, best_right_weights = left_weights, right_weights
 
-    return best_index, best_split_value, best_left, best_right
+    return best_index, best_split_value, best_left, best_right, best_left_weights, best_right_weights
 
 
 def belong_to_klass(subset):
@@ -180,6 +183,7 @@ def entropy(dataset, weights):
     class1 = (n_class1 / n) * math.log(n_class1 / n)
     class2 = (n_class2 / n) * math.log(n_class2 / n)
     entropy = class1 + class2
+
     return -entropy
 
 
@@ -199,4 +203,5 @@ def information_gain(dataset, left_subset, right_subset, dataset_weights, left_w
     entropy_before = entropy(dataset, weights)
     weighted_entropy_left = (n_left / n) * entropy(left_subset, left_weights)
     weighted_entropy_right = (n_right / n) * entropy(right_subset, right_weights)
+
     return entropy_before - (weighted_entropy_left + weighted_entropy_right)
