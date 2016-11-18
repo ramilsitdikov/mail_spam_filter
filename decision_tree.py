@@ -4,11 +4,11 @@ import math
 
 class Node:
     def __init__(self, left=None,
-                                right=None,
-                                split_index=None,
-                                split_value=None,
-                                terminal=False,
-                                klass=None):
+                                  right=None,
+                                  split_index=None,
+                                  split_value=None,
+                                  terminal=False,
+                                  klass=None):
         self.left = left
         self.right = right
         self.split_index = split_index
@@ -92,16 +92,12 @@ def split(node, dataset, max_depth, min_samples, current_depth, weights):
     :return:
     '''
     split_index, split_value, left_subset, right_subset, left_weights, right_weights = get_split(dataset)
-    if left_subset.shape[0] < min_samples or right_subset.shape[0] < min_samples:
+    if left_subset.shape[0] < min_samples or right_subset.shape[0] < min_samples or depth >= max_depth:
         node.terminal = True
         node.klass = belong_to_klass(dataset)
         return
-    if depth >= max_depth:
-        node.split_index = split_index
-        node.split_value = split_value
-        node.left = Node(terminal = True, klass = belong_to_klass(left_subset))
-        node.right = Node(terminal = True, klass = belong_to_klass(right_subset))
-        return
+    node.split_index = split_index
+    node.split_value = split_value
     node.left = Node()
     node.right = Node()
     split(node.left, left_subset, current_depth + 1, min_samples, left_weights)
