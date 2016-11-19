@@ -136,19 +136,22 @@ def get_split(dataset, labels, weights):
     number_of_features = dataset.shape[1]
     best_gain = None
     best_index, best_split_value = 0, 0
-    best_left_labels, best_right_labels = [], []
-    best_left, best_right = [], []
-    best_left_weights, best_right_weights = [], []
+    best_left_labels, best_right_labels = np.array([]), np.array([])
+    best_left, best_right = np.array([]), np.array([])
+    best_left_weights, best_right_weights = np.array([]), np.array([])
     for index in xrange(number_of_features):
-        for row in dataset:
-            left_subset, right_subset, left_labels, right_labels, left_weights, right_weights \
-                = test_split(dataset, labels, index, row[index], weights)
-            current_gain = information_gain(labels, left_labels, right_labels, weights, left_weights, right_weights)
-            if current_gain > best_gain or not best_gain:
-                best_gain, best_index, best_split_value = current_gain, index, row[index]
-                best_left, best_right = left_subset, right_subset
-                best_left_labels, best_right_labels = left_labels, right_labels
-                best_left_weights, best_right_weights = left_weights, right_weights
+        unique_values = list(set(dataset[:, index]))
+        sorted_unique = sorted(unique_values)[:-1]
+        for value in sorted_unique:
+            for row in dataset:
+                left_subset, right_subset, left_labels, right_labels, left_weights, right_weights \
+                    = test_split(dataset, labels, index, value, weights)
+                current_gain = information_gain(labels, left_labels, right_labels, weights, left_weights, right_weights)
+                if current_gain > best_gain or not best_gain:
+                    best_gain, best_index, best_split_value = current_gain, index, value
+                    best_left, best_right = left_subset, right_subset
+                    best_left_labels, best_right_labels = left_labels, right_labels
+                    best_left_weights, best_right_weights = left_weights, right_weights
 
     return best_gain, best_index, best_split_value, \
                best_left, best_right, \
@@ -171,7 +174,7 @@ def test_split(dataset, labels, feature_index, value_to_compare, weights):
     left_labels, right_labels = [], []
     left_weights, right_weights = [], []
     for row in xrange(dataset.shape[0]):
-        if dataset[row][feature_index] < value_to_compare:
+        if dataset[row][feature_index] <= value_to_compare:
             left_subset.append(dataset[row])
             left_labels.append(labels[row])
             left_weights.append(weights[row])
@@ -243,7 +246,13 @@ if __name__ == "__main__":
     X = np.array([[5.1,3.5,1.4,0.2], [4.9,3.0,1.4,0.2], [4.7,3.2,1.3,0.2], [4.6,3.1,1.5,0.2], [5.0,3.6,1.4,0.2], [5.4,3.9,1.7,0.4], [4.6,3.4,1.4,0.3], [5.0,3.4,1.5,0.2], [4.4,2.9,1.4,0.2], [4.9,3.1,1.5,0.1], [5.4,3.7,1.5,0.2], [4.8,3.4,1.6,0.2], [4.8,3.0,1.4,0.1], [4.3,3.0,1.1,0.1], [5.8,4.0,1.2,0.2], [5.7,4.4,1.5,0.4], [5.4,3.9,1.3,0.4], [5.1,3.5,1.4,0.3], [5.7,3.8,1.7,0.3], [5.1,3.8,1.5,0.3], [5.4,3.4,1.7,0.2], [5.1,3.7,1.5,0.4], [4.6,3.6,1.0,0.2], [5.1,3.3,1.7,0.5], [4.8,3.4,1.9,0.2], [5.0,3.0,1.6,0.2], [5.0,3.4,1.6,0.4], [5.2,3.5,1.5,0.2], [5.2,3.4,1.4,0.2], [4.7,3.2,1.6,0.2], [4.8,3.1,1.6,0.2], [5.4,3.4,1.5,0.4], [5.2,4.1,1.5,0.1], [5.5,4.2,1.4,0.2], [4.9,3.1,1.5,0.1], [5.0,3.2,1.2,0.2], [5.5,3.5,1.3,0.2], [4.9,3.1,1.5,0.1], [4.4,3.0,1.3,0.2], [5.1,3.4,1.5,0.2], [5.0,3.5,1.3,0.3], [4.5,2.3,1.3,0.3], [4.4,3.2,1.3,0.2], [5.0,3.5,1.6,0.6], [5.1,3.8,1.9,0.4], [4.8,3.0,1.4,0.3], [5.1,3.8,1.6,0.2], [4.6,3.2,1.4,0.2], [5.3,3.7,1.5,0.2], [5.0,3.3,1.4,0.2], [7.0,3.2,4.7,1.4], [6.4,3.2,4.5,1.5], [6.9,3.1,4.9,1.5], [5.5,2.3,4.0,1.3], [6.5,2.8,4.6,1.5], [5.7,2.8,4.5,1.3], [6.3,3.3,4.7,1.6], [4.9,2.4,3.3,1.0], [6.6,2.9,4.6,1.3], [5.2,2.7,3.9,1.4], [5.0,2.0,3.5,1.0], [5.9,3.0,4.2,1.5], [6.0,2.2,4.0,1.0], [6.1,2.9,4.7,1.4], [5.6,2.9,3.6,1.3], [6.7,3.1,4.4,1.4], [5.6,3.0,4.5,1.5], [5.8,2.7,4.1,1.0], [6.2,2.2,4.5,1.5], [5.6,2.5,3.9,1.1], [5.9,3.2,4.8,1.8], [6.1,2.8,4.0,1.3], [6.3,2.5,4.9,1.5], [6.1,2.8,4.7,1.2], [6.4,2.9,4.3,1.3], [6.6,3.0,4.4,1.4], [6.8,2.8,4.8,1.4], [6.7,3.0,5.0,1.7], [6.0,2.9,4.5,1.5], [5.7,2.6,3.5,1.0], [5.5,2.4,3.8,1.1], [5.5,2.4,3.7,1.0], [5.8,2.7,3.9,1.2], [6.0,2.7,5.1,1.6], [5.4,3.0,4.5,1.5], [6.0,3.4,4.5,1.6], [6.7,3.1,4.7,1.5], [6.3,2.3,4.4,1.3], [5.6,3.0,4.1,1.3], [5.5,2.5,4.0,1.3], [5.5,2.6,4.4,1.2], [6.1,3.0,4.6,1.4], [5.8,2.6,4.0,1.2], [5.0,2.3,3.3,1.0], [5.6,2.7,4.2,1.3], [5.7,3.0,4.2,1.2], [5.7,2.9,4.2,1.3], [6.2,2.9,4.3,1.3], [5.1,2.5,3.0,1.1], [5.7,2.8,4.1,1.3]])
     y = np.array([1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
 
-    tree = DecisionTree(max_depth = 5)
+    # X = np.array([[1, 0],
+    #                        [0, 1],
+    #                        [1, 1],
+    #                        [0, 0]])
+    # y = np.array([1, 1, 1, 1])
+
+    tree = DecisionTree()
 
     tree.train(X, y, np.ones(y.shape[0]))
     predicted_y = tree.classify(X)
