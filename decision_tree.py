@@ -1,20 +1,31 @@
+from __future__ import print_function
 import numpy as np
 import math
 
 
 class Node:
     def __init__(self, left=None,
-                                  right=None,
-                                  split_index=None,
-                                  split_value=None,
-                                  terminal=False,
-                                  klass=None):
+                                right=None,
+                                split_index=None,
+                                split_value=None,
+                                terminal=False,
+                                klass=None,
+                                depth=1):
         self.left = left
         self.right = right
         self.split_index = split_index
         self.split_value = split_value
         self.terminal = terminal
         self.klass = klass
+        self.depth = depth
+
+
+    def __str__(self):
+        tabs = ("    |" * self.depth)
+        if self.terminal:
+            return tabs + r"Depth = {} | Class = {}".format(self.depth, self.klass)
+        else:
+            return tabs + r"Depth = {} | Split index = {} | Split value = {}".format(self.depth, self.split_index, self.split_value)
 
 
 
@@ -33,7 +44,6 @@ class DecisionTree():
         :param weights: array of numbers - weights of each sample in dataset
         ;return:
         '''
-        weights=np.ones(y.shape[0])
         dataset = make_dataset(X, y)
         current_depth = 0
         split(self.root, dataset, self.max_depth, self.min_samples, self.min_entropy, current_depth + 1, weights)
@@ -49,6 +59,19 @@ class DecisionTree():
             results.append(predict(self.root, d))
         return np.array(results)
 
+    def print_in_depth(self):
+        print_node(self.root)
+
+
+
+def print_node(node):
+    '''
+    :param node: node Node
+    '''
+    print(node)
+    if not node.terminal:
+        print(node.left)
+        print(node.right)
 
 
 def make_dataset(X, Y):
@@ -94,13 +117,14 @@ def split(node, dataset, max_depth, min_samples, min_entropy, current_depth, wei
     :return:
     '''
     gain, split_index, split_value, left_subset, right_subset, left_weights, right_weights = get_split(dataset, weights)
-    if len(left_subset) < min_samples or \
-        len(right_subset) < min_samples or \
-        current_depth >= max_depth or \
-        gain < min_entropy:
-            node.terminal = True
-            node.klass = belong_to_klass(dataset)
-            return
+    if len(left_subset) <= min_samples or \
+       len(right_subset) <= min_samples or \
+       current_depth >= max_depth or \
+       gain <= min_entropy:
+           node.terminal = True
+           node.klass = belong_to_klass(dataset)
+           node.depth = current_depth
+           return
     node.split_index = split_index
     node.split_value = split_value
     node.left = Node()
@@ -210,19 +234,13 @@ def information_gain(dataset, left_subset, right_subset, dataset_weights, left_w
 
 
 if __name__ == "__main__":
+    X = np.array([[5.1,3.5,1.4,0.2], [4.9,3.0,1.4,0.2], [4.7,3.2,1.3,0.2], [4.6,3.1,1.5,0.2], [5.0,3.6,1.4,0.2], [5.4,3.9,1.7,0.4], [4.6,3.4,1.4,0.3], [5.0,3.4,1.5,0.2], [4.4,2.9,1.4,0.2], [4.9,3.1,1.5,0.1], [5.4,3.7,1.5,0.2], [4.8,3.4,1.6,0.2], [4.8,3.0,1.4,0.1], [4.3,3.0,1.1,0.1], [5.8,4.0,1.2,0.2], [5.7,4.4,1.5,0.4], [5.4,3.9,1.3,0.4], [5.1,3.5,1.4,0.3], [5.7,3.8,1.7,0.3], [5.1,3.8,1.5,0.3], [5.4,3.4,1.7,0.2], [5.1,3.7,1.5,0.4], [4.6,3.6,1.0,0.2], [5.1,3.3,1.7,0.5], [4.8,3.4,1.9,0.2], [5.0,3.0,1.6,0.2], [5.0,3.4,1.6,0.4], [5.2,3.5,1.5,0.2], [5.2,3.4,1.4,0.2], [4.7,3.2,1.6,0.2], [4.8,3.1,1.6,0.2], [5.4,3.4,1.5,0.4], [5.2,4.1,1.5,0.1], [5.5,4.2,1.4,0.2], [4.9,3.1,1.5,0.1], [5.0,3.2,1.2,0.2], [5.5,3.5,1.3,0.2], [4.9,3.1,1.5,0.1], [4.4,3.0,1.3,0.2], [5.1,3.4,1.5,0.2], [5.0,3.5,1.3,0.3], [4.5,2.3,1.3,0.3], [4.4,3.2,1.3,0.2], [5.0,3.5,1.6,0.6], [5.1,3.8,1.9,0.4], [4.8,3.0,1.4,0.3], [5.1,3.8,1.6,0.2], [4.6,3.2,1.4,0.2], [5.3,3.7,1.5,0.2], [5.0,3.3,1.4,0.2], [7.0,3.2,4.7,1.4], [6.4,3.2,4.5,1.5], [6.9,3.1,4.9,1.5], [5.5,2.3,4.0,1.3], [6.5,2.8,4.6,1.5], [5.7,2.8,4.5,1.3], [6.3,3.3,4.7,1.6], [4.9,2.4,3.3,1.0], [6.6,2.9,4.6,1.3], [5.2,2.7,3.9,1.4], [5.0,2.0,3.5,1.0], [5.9,3.0,4.2,1.5], [6.0,2.2,4.0,1.0], [6.1,2.9,4.7,1.4], [5.6,2.9,3.6,1.3], [6.7,3.1,4.4,1.4], [5.6,3.0,4.5,1.5], [5.8,2.7,4.1,1.0], [6.2,2.2,4.5,1.5], [5.6,2.5,3.9,1.1], [5.9,3.2,4.8,1.8], [6.1,2.8,4.0,1.3], [6.3,2.5,4.9,1.5], [6.1,2.8,4.7,1.2], [6.4,2.9,4.3,1.3], [6.6,3.0,4.4,1.4], [6.8,2.8,4.8,1.4], [6.7,3.0,5.0,1.7], [6.0,2.9,4.5,1.5], [5.7,2.6,3.5,1.0], [5.5,2.4,3.8,1.1], [5.5,2.4,3.7,1.0], [5.8,2.7,3.9,1.2], [6.0,2.7,5.1,1.6], [5.4,3.0,4.5,1.5], [6.0,3.4,4.5,1.6], [6.7,3.1,4.7,1.5], [6.3,2.3,4.4,1.3], [5.6,3.0,4.1,1.3], [5.5,2.5,4.0,1.3], [5.5,2.6,4.4,1.2], [6.1,3.0,4.6,1.4], [5.8,2.6,4.0,1.2], [5.0,2.3,3.3,1.0], [5.6,2.7,4.2,1.3], [5.7,3.0,4.2,1.2], [5.7,2.9,4.2,1.3], [6.2,2.9,4.3,1.3], [5.1,2.5,3.0,1.1], [5.7,2.8,4.1,1.3]])
+    y = np.array([1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
+
     tree = DecisionTree()
-    X = np.array([[2.771244718, 1.784783929],
-                           [1.728571309, 1.169761413],
-                           [3.678319846, 2.81281357],
-                           [3.961043357, 2.61995032],
-                           [2.999208922, 2.209014212],
-                           [7.497545867, 3.162953546],
-                           [9.00220326, 3.339047188],
-                           [7.444542326, 0.476683375],
-                           [10.12493903, 3.234550982],
-                           [6.642287351, 3.319983761]])
-    y = np.array([-1, -1, -1, -1, -1, 1, 1, 1, 1, 1])
+
     tree.train(X, y, np.ones(y.shape[0]))
-    z = tree.classify(X)
-    print z
-    pass
+    predicted_y = tree.classify(X)
+    difference = np.sum(np.abs(predicted_y - y))
+    print("Number of different elements =", difference/2)
+    tree.print_in_depth()
