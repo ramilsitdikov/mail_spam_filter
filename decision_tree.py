@@ -70,8 +70,8 @@ def print_node(node):
     '''
     print(node)
     if not node.terminal:
-        print(node.left)
-        print(node.right)
+        print_node(node.left)
+        print_node(node.right)
 
 
 def make_dataset(X, Y):
@@ -122,36 +122,25 @@ def split(node, dataset, max_depth, min_samples, min_entropy, current_depth, wei
        current_depth >= max_depth or \
        gain <= min_entropy:
            node.terminal = True
-           node.klass = belong_to_klass(dataset)
+           node.klass = belong_to_class(dataset)
            node.depth = current_depth
            return
     node.split_index = split_index
     node.split_value = split_value
     node.left = Node()
     node.right = Node()
+    node.depth = current_depth
     split(node.left, left_subset, max_depth, min_samples, min_entropy, current_depth + 1, left_weights)
     split(node.right, right_subset, max_depth, min_samples, min_entropy, current_depth + 1, right_weights)
 
 
-def test_split(dataset, feature_index, value_to_compare, weights):
+def belong_to_class(subset):
     '''
-    :param dataset: array of dictionaries like { "features": list_of_features, "class": label } -> np.array([..., { "features": X[i], "class": Y[i] }, ...])
-    :param feature_index: number of feature to split
-    :param value_to_compare: value to compare given feature
-    :param weights: array of numbers - weights of each sample in dataset
-    :return: two subsets like np.array([..., { "features": X[i], "class": Y[i] }, ...]), two arrays of weights
+    :param subset: array of dictionaries like { "features": list_of_features, "class": label } -> np.array([..., { "features": X[i], "klass": Y[i] }, ...])
+    :return: type of maximum labels' klass -> -1 or 1
     '''
-    left_subset, right_subset = list(), list()
-    left_weights, right_weights = list(), list()
-    for row in xrange(dataset.shape[0]):
-        if dataset[row]["features"][feature_index] < value_to_compare:
-            left_subset.append(dataset[row])
-            left_weights.append(weights[row])
-        else:
-            right_subset.append(dataset[row])
-            right_weights.append(weights[row])
-
-    return np.array(left_subset), np.array(right_subset), left_weights, right_weights
+    outcomes = [row["class"] for row in subset]
+    return max(set(outcomes), key=outcomes.count)
 
 
 def get_split(dataset, weights):
@@ -178,14 +167,45 @@ def get_split(dataset, weights):
     return best_gain, best_index, best_split_value, best_left, best_right, best_left_weights, best_right_weights
 
 
-def belong_to_klass(subset):
+def test_split(dataset, feature_index, value_to_compare, weights):
     '''
-    :param subset: array of dictionaries like { "features": list_of_features, "class": label } -> np.array([..., { "features": X[i], "klass": Y[i] }, ...])
-    :return: type of maximum labels' klass -> -1 or 1
+    :param dataset: array of dictionaries like { "features": list_of_features, "class": label } -> np.array([..., { "features": X[i], "class": Y[i] }, ...])
+    :param feature_index: number of feature to split
+    :param value_to_compare: value to compare given feature
+    :param weights: array of numbers - weights of each sample in dataset
+    :return: two subsets like np.array([..., { "features": X[i], "class": Y[i] }, ...]), two arrays of weights
     '''
-    outcomes = [row["class"] for row in subset]
-    return max(set(outcomes), key=outcomes.count)
+    left_subset, right_subset = list(), list()
+    left_weights, right_weights = list(), list()
+    for row in xrange(dataset.shape[0]):
+        if dataset[row]["features"][feature_index] < value_to_compare:
+            left_subset.append(dataset[row])
+            left_weights.append(weights[row])
+        else:
+            right_subset.append(dataset[row])
+            right_weights.append(weights[row])
 
+    return np.array(left_subset), np.array(right_subset), left_weights, right_weights
+
+
+def information_gain(dataset, left_subset, right_subset, dataset_weights, left_weights, right_weights):
+    '''
+    :param dataset: array of dictionaries like { "features": list_of_features, "class": label } -> np.array([..., { "features": X[i], "class": Y[i] }, ...])
+    :param left_subset: array of dictionaries like { "features": list_of_features, "class": label } -> np.array([..., { "features": X[i], "class": Y[i] }, ...])
+    :param right_subset: array of dictionaries like { "features": list_of_features, "class": label } -> np.array([..., { "features": X[i], "class": Y[i] }, ...])
+    :param dataset_weights: array of numbers - weights of each sample in dataset
+    :param left_weights: array of numbers - weights of each sample in left_subset
+    :param right_weights: array of numbers - weights of each sample in right_subset
+    :return: difference between entropy befor and after split
+    '''
+    n = dataset.shape[0]
+    n_left = left_subset.shape[0]
+    n_right = right_subset.shape[0]
+    entropy_before = entropy(dataset, dataset_weights)
+    weighted_entropy_left = (n_left / n) * (entropy(left_subset, left_weights) if len(left_subset) > 0 else 1)
+    weighted_entropy_right = (n_right / n) * (entropy(right_subset, right_weights) if len(right_subset) > 0 else 1)
+
+    return entropy_before - (weighted_entropy_left + weighted_entropy_right)
 
 
 ### Entropy
@@ -212,32 +232,12 @@ def entropy(dataset, weights):
     return -entropy
 
 
-def information_gain(dataset, left_subset, right_subset, dataset_weights, left_weights, right_weights):
-    '''
-    :param dataset: array of dictionaries like { "features": list_of_features, "class": label } -> np.array([..., { "features": X[i], "class": Y[i] }, ...])
-    :param left_subset: array of dictionaries like { "features": list_of_features, "class": label } -> np.array([..., { "features": X[i], "class": Y[i] }, ...])
-    :param right_subset: array of dictionaries like { "features": list_of_features, "class": label } -> np.array([..., { "features": X[i], "class": Y[i] }, ...])
-    :param dataset_weights: array of numbers - weights of each sample in dataset
-    :param left_weights: array of numbers - weights of each sample in left_subset
-    :param right_weights: array of numbers - weights of each sample in right_subset
-    :return: difference between entropy befor and after split
-    '''
-    n = dataset.shape[0]
-    n_left = left_subset.shape[0]
-    n_right = right_subset.shape[0]
-    entropy_before = entropy(dataset, dataset_weights)
-    weighted_entropy_left = (n_left / n) * (entropy(left_subset, left_weights) if len(left_subset) > 0 else 1)
-    weighted_entropy_right = (n_right / n) * (entropy(right_subset, right_weights) if len(right_subset) > 0 else 1)
-
-    return entropy_before - (weighted_entropy_left + weighted_entropy_right)
-
-
 
 if __name__ == "__main__":
     X = np.array([[5.1,3.5,1.4,0.2], [4.9,3.0,1.4,0.2], [4.7,3.2,1.3,0.2], [4.6,3.1,1.5,0.2], [5.0,3.6,1.4,0.2], [5.4,3.9,1.7,0.4], [4.6,3.4,1.4,0.3], [5.0,3.4,1.5,0.2], [4.4,2.9,1.4,0.2], [4.9,3.1,1.5,0.1], [5.4,3.7,1.5,0.2], [4.8,3.4,1.6,0.2], [4.8,3.0,1.4,0.1], [4.3,3.0,1.1,0.1], [5.8,4.0,1.2,0.2], [5.7,4.4,1.5,0.4], [5.4,3.9,1.3,0.4], [5.1,3.5,1.4,0.3], [5.7,3.8,1.7,0.3], [5.1,3.8,1.5,0.3], [5.4,3.4,1.7,0.2], [5.1,3.7,1.5,0.4], [4.6,3.6,1.0,0.2], [5.1,3.3,1.7,0.5], [4.8,3.4,1.9,0.2], [5.0,3.0,1.6,0.2], [5.0,3.4,1.6,0.4], [5.2,3.5,1.5,0.2], [5.2,3.4,1.4,0.2], [4.7,3.2,1.6,0.2], [4.8,3.1,1.6,0.2], [5.4,3.4,1.5,0.4], [5.2,4.1,1.5,0.1], [5.5,4.2,1.4,0.2], [4.9,3.1,1.5,0.1], [5.0,3.2,1.2,0.2], [5.5,3.5,1.3,0.2], [4.9,3.1,1.5,0.1], [4.4,3.0,1.3,0.2], [5.1,3.4,1.5,0.2], [5.0,3.5,1.3,0.3], [4.5,2.3,1.3,0.3], [4.4,3.2,1.3,0.2], [5.0,3.5,1.6,0.6], [5.1,3.8,1.9,0.4], [4.8,3.0,1.4,0.3], [5.1,3.8,1.6,0.2], [4.6,3.2,1.4,0.2], [5.3,3.7,1.5,0.2], [5.0,3.3,1.4,0.2], [7.0,3.2,4.7,1.4], [6.4,3.2,4.5,1.5], [6.9,3.1,4.9,1.5], [5.5,2.3,4.0,1.3], [6.5,2.8,4.6,1.5], [5.7,2.8,4.5,1.3], [6.3,3.3,4.7,1.6], [4.9,2.4,3.3,1.0], [6.6,2.9,4.6,1.3], [5.2,2.7,3.9,1.4], [5.0,2.0,3.5,1.0], [5.9,3.0,4.2,1.5], [6.0,2.2,4.0,1.0], [6.1,2.9,4.7,1.4], [5.6,2.9,3.6,1.3], [6.7,3.1,4.4,1.4], [5.6,3.0,4.5,1.5], [5.8,2.7,4.1,1.0], [6.2,2.2,4.5,1.5], [5.6,2.5,3.9,1.1], [5.9,3.2,4.8,1.8], [6.1,2.8,4.0,1.3], [6.3,2.5,4.9,1.5], [6.1,2.8,4.7,1.2], [6.4,2.9,4.3,1.3], [6.6,3.0,4.4,1.4], [6.8,2.8,4.8,1.4], [6.7,3.0,5.0,1.7], [6.0,2.9,4.5,1.5], [5.7,2.6,3.5,1.0], [5.5,2.4,3.8,1.1], [5.5,2.4,3.7,1.0], [5.8,2.7,3.9,1.2], [6.0,2.7,5.1,1.6], [5.4,3.0,4.5,1.5], [6.0,3.4,4.5,1.6], [6.7,3.1,4.7,1.5], [6.3,2.3,4.4,1.3], [5.6,3.0,4.1,1.3], [5.5,2.5,4.0,1.3], [5.5,2.6,4.4,1.2], [6.1,3.0,4.6,1.4], [5.8,2.6,4.0,1.2], [5.0,2.3,3.3,1.0], [5.6,2.7,4.2,1.3], [5.7,3.0,4.2,1.2], [5.7,2.9,4.2,1.3], [6.2,2.9,4.3,1.3], [5.1,2.5,3.0,1.1], [5.7,2.8,4.1,1.3]])
     y = np.array([1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
 
-    tree = DecisionTree()
+    tree = DecisionTree(max_depth = 5)
 
     tree.train(X, y, np.ones(y.shape[0]))
     predicted_y = tree.classify(X)
