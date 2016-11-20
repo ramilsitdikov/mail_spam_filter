@@ -1,33 +1,16 @@
 # -*- coding:utf-8 -*-
-import numpy as np
 
-class WeakClassifier():
-
-    def __init__(self):
-        # Параметры слабого классификатора
-        pass
-
-    def train(self, data, labels, weights):
-        if len(data) == len(labels) and len(data) == len(weights):
-            training_set_count = len(data)
-        else:
-            return False
-        # Код обучения слабого классификатора
-        return True
-
-    def classify(self, data):
-        results = np.ones(len(data))
-        # Код классификации слабого классификатора
-        return results
+from tree import *
+#from decision_tree import *
 
 class AdaBoost():
 
-    def __init__(self, number_of_rounds, weak_classifier_class):
+    def __init__(self, number_of_rounds, max_depth, min_examples, min_entropy):
         self.weights = None
         self.alphas = []
         self.weak_classifiers = []
-        self.weak_classifier_class = weak_classifier_class
         self.number_of_rounds = number_of_rounds
+        self.max_depth, self.min_examples, self.min_entropy = max_depth, min_examples, min_entropy
 
     def train(self, data, labels):
         # Простая проверка корректности данных
@@ -43,7 +26,7 @@ class AdaBoost():
         # Обучение простых классификаторов
         for i in range(len(self.weak_classifiers), self.number_of_rounds):
             # Создаем простой классификатор и обучаем его
-            weak_clf = self.weak_classifier_class()
+            weak_clf = WeakClassifier(self.max_depth, self.min_examples, self.min_entropy)
             weak_clf.train(data, labels, self.weights)
 
             # Вычисляем взвешенную ошибку классификации
@@ -79,16 +62,31 @@ class AdaBoost():
         results[results == 0] = -1
         return np.sign(results)
 
-if False:
-    data = np.array([[0,1],[0,2],[2,-1],[0,1],[2,1]])
+if __name__ == "__main__":
+    number_of_rounds = 1000
+    max_depth = 3
+    min_examples = 1
+    min_entropy = 0
 
-    labels = np.array([-1,-1,1,1,-1])
-    weights = np.array([0.2,0.3,0.1,0.3,0.1])
-    wc = WeakClassifier()
+    data = np.array([[0,1],
+                     [0,2],
+                     [1,2],
+                     [1,2],
+                     [1,1]])
+    labels = np.array([-1,
+                       -1,
+                       1,
+                       1,
+                       -1])
+    weights = np.array([1,
+                        1,
+                        1,
+                        1,
+                        1])
+    wc = WeakClassifier(max_depth,min_examples,min_entropy)
     print wc.train(data,labels,weights)
     print wc.classify(data)
 
-    number_of_rounds = 100
-    ab = AdaBoost(number_of_rounds, WeakClassifier)
+    ab = AdaBoost(number_of_rounds, max_depth,min_examples,min_entropy)
     print ab.train(data,labels)
     print ab.classify(data)

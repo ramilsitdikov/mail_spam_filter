@@ -2,7 +2,6 @@ from __future__ import print_function
 import numpy as np
 import math
 
-
 class Node:
     def __init__(self, left=None,
                                 right=None,
@@ -61,7 +60,21 @@ class DecisionTree():
     def print_in_depth(self):
         print_node(self.root)
 
+class WeakClassifier():
 
+    def __init__(self, max_depth, min_examples, min_entropy):
+        self.tree = DecisionTree(max_depth, min_examples, min_entropy)
+
+    def train(self, data, labels, weights=None):
+        if weights is None:
+            weights = np.ones(labels.shape[0])
+        if len(data) != len(labels) or len(data) != len(weights):
+            return False
+        self.tree.train(data, labels, weights)
+        return True
+
+    def classify(self, data):
+        return self.tree.classify(data)
 
 def print_node(node):
     '''
@@ -80,7 +93,7 @@ def predict(node, row):
     :param row: array of features
     :return label of klass: -1 or 1
     '''
-    if row[node.split_index] < node.split_value:
+    if row[node.split_index] <= node.split_value: # TODO
         if node.left.terminal:
             return node.left.klass
         else:
@@ -105,19 +118,26 @@ def split(node, dataset, labels, max_depth, min_samples, min_entropy, current_de
     :param weights: numpy array of numbers
     :return:
     '''
+
+    node.depth = current_depth
+
+    if dataset.shape[0] <= min_samples or \
+                    current_depth >= max_depth or \
+                    entropy(labels, weights) <= min_entropy:  # TODO
+        node.terminal = True
+        node.klass = belong_to_class(labels)
+        return
+
     gain, split_index, split_value, left_subset, right_subset, left_labels, right_labels, left_weights, right_weights \
         = get_split(dataset, labels, weights)
-    if left_subset.shape[0] <= min_samples or \
-       right_subset.shape[0] <= min_samples or \
-       current_depth >= max_depth or \
-       gain <= min_entropy:
-           node.terminal = True
-           node.klass = belong_to_class(labels)
-           node.depth = current_depth
-           return
+
+    if gain is None:  # TODO
+        node.terminal = True
+        node.klass = belong_to_class(labels)
+        return
+
     node.split_index = split_index
     node.split_value = split_value
-    node.depth = current_depth
     node.left = Node()
     node.right = Node()
     split(node.left, left_subset, left_labels, max_depth, min_samples, min_entropy, current_depth + 1, left_weights)
@@ -142,16 +162,15 @@ def get_split(dataset, labels, weights):
     for index in xrange(number_of_features):
         unique_values = list(set(dataset[:, index]))
         sorted_unique = sorted(unique_values)[:-1]
-        for value in sorted_unique:
-            for row in dataset:
-                left_subset, right_subset, left_labels, right_labels, left_weights, right_weights \
-                    = test_split(dataset, labels, index, value, weights)
-                current_gain = information_gain(labels, left_labels, right_labels, weights, left_weights, right_weights)
-                if current_gain > best_gain or not best_gain:
-                    best_gain, best_index, best_split_value = current_gain, index, value
-                    best_left, best_right = left_subset, right_subset
-                    best_left_labels, best_right_labels = left_labels, right_labels
-                    best_left_weights, best_right_weights = left_weights, right_weights
+        for value in sorted_unique: # TODO
+            left_subset, right_subset, left_labels, right_labels, left_weights, right_weights \
+                = test_split(dataset, labels, index, value, weights)
+            current_gain = information_gain(labels, left_labels, right_labels, weights, left_weights, right_weights)
+            if best_gain is None or current_gain > best_gain: # TODO
+                best_gain, best_index, best_split_value = current_gain, index, value
+                best_left, best_right = left_subset, right_subset
+                best_left_labels, best_right_labels = left_labels, right_labels
+                best_left_weights, best_right_weights = left_weights, right_weights
 
     return best_gain, best_index, best_split_value, \
                best_left, best_right, \
@@ -208,7 +227,7 @@ def information_gain(labels, left_labels, right_labels, weights, left_weights, r
     :param right_weights: array of numbers - weights of each sample in right_subset
     :return: difference between entropy befor and after split
     '''
-    n = labels.shape[0]
+    n = float(labels.shape[0]) # TODO
     n_left = left_labels.shape[0]
     n_right = right_labels.shape[0]
     entropy_before = entropy(labels, weights)
@@ -225,8 +244,8 @@ def entropy(labels, weights):
     :return: entropy of dataset
     '''
     n = labels.shape[0]
-    n_class1 = 0
-    n_class2 = 0
+    n_class1 = 0.
+    n_class2 = 0.
     for i in xrange(n):
         if labels[i] == -1:
             n_class1 += weights[i]
@@ -234,8 +253,8 @@ def entropy(labels, weights):
             n_class2 += weights[i]
         else:
             raise Exception('Error in labels: label class not from [-1, 1].')
-    class1 = (n_class1 / n) * math.log(n_class1 / n if n_class1 > 0 else 1)
-    class2 = (n_class2 / n) * math.log(n_class2 / n if n_class2 > 0 else 1)
+    class1 = (n_class1 / n) * math.log(n_class1 / n if n_class1 > 0 else 1, 2) # TODO
+    class2 = (n_class2 / n) * math.log(n_class2 / n if n_class2 > 0 else 1, 2) # TODO
     entropy = class1 + class2
 
     return -entropy
@@ -247,15 +266,16 @@ if __name__ == "__main__":
     y = np.array([1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
 
     # X = np.array([[1, 0],
-    #                        [0, 1],
-    #                        [1, 1],
-    #                        [0, 0]])
-    # y = np.array([1, 1, 1, 1])
+    #               [0, 1],
+    #               [1, 1],
+    #               [0, 0]])
+    # y = np.array([1, -1, -1, 1])
 
     tree = DecisionTree()
 
     tree.train(X, y, np.ones(y.shape[0]))
     predicted_y = tree.classify(X)
+    print(predicted_y)
     difference = np.sum(np.abs(predicted_y - y))
     print("Number of different elements =", difference/2)
     tree.print_in_depth()
