@@ -12,11 +12,8 @@ def standart_string (_str):
     new_str = _str.lower()
     new_str = new_str.strip()
     new_str = new_str.replace("/", " ")
-    try:
-        new_str = new_str.replace("»", " ")
-        new_str = new_str.replace("«", " ")
-    except:
-        pass
+    new_str = new_str.replace("»", " ")
+    new_str = new_str.replace("«", " ")
     new_str = new_str.replace(".", "")
     new_str = new_str.replace("!", "")
     new_str = new_str.replace("- ", "")
@@ -45,16 +42,17 @@ def dictionary(words, lenght):
             dic[x] = dic[x] + 1
         else:
             dic[x] = 1
-    print ("Количество всех слов: " + str(len(dic)))
+    print ("количество всех слов")
+    print (len(dic))
     b = sorted(dic.items(), key=lambda item: item[1], reverse=True)
     for i in range(len(b)):
         if b[i][1] < 10:
             b[i] = ()
     b = [x for x in b if x]
-    print("Количество слов, которые встречаются чаще, чем 10 раз: " + str(len(b)))
+    print("Количество слов, которые встречаются чащем, чем 10 раз = " + str(len(b)))
     if (len(b) < lenght):
-        print ("Количество слов меньше, чем требуемая длина словаря!")
-        print ("Длина словаря: "+str(len(b)))
+        print ("Количество слов меньше, чем требуемая длина словаря")
+        print ("Длина словаря="+str(len(b)))
     b = b[0:lenght]
     new_b = []
     for i in range(len(b)):
@@ -139,6 +137,18 @@ def pell_mell(a,b):
     random.shuffle(c)
     new_a=[]
     new_b=[]
+    for i in range(len(a)):
+        new_a.append(c[i][0])
+        new_b.append(c[i][1])
+    return new_a, new_b
+
+def pell_mell2(a, b):
+    c = []
+    for i in range(len(a)):
+        c.append((a[i],b[i]))
+    random.shuffle(c)
+    new_a = []
+    new_b = []
     for i in range(len(a)):
         new_a.append(c[i][0])
         new_b.append(c[i][1])
