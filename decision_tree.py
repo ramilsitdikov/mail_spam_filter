@@ -221,7 +221,8 @@ def entropy(labels, weights):
     :param weights: numpy array of numbers
     :return: entropy of dataset
     '''
-    n = float(len(labels))
+    # n = float(len(labels))
+    n = sum(weights)
     mask = labels == -1
     n_class1 = sum(weights[mask])
     n_class2 = sum(weights[~mask])
