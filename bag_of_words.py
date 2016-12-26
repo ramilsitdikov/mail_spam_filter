@@ -12,15 +12,16 @@ def standart_string (_str):
     new_str = _str.lower()
     new_str = new_str.strip()
     new_str = new_str.replace("/", " ")
-    new_str = new_str.replace("»", " ")
-    new_str = new_str.replace("«", " ")
-    new_str = new_str.replace(".", "")
-    new_str = new_str.replace("!", "")
-    new_str = new_str.replace("- ", "")
+    new_str = new_str.replace(".", " ")
+    new_str = new_str.replace("!", " ")
     new_str = new_str.replace("-", " ")
-    new_str = new_str.replace(",", "")
+    new_str = new_str.replace(",", " ")
     new_str = new_str.replace("\t", " ")
     new_str = new_str.replace("\n", " ")
+    new_str = new_str.replace("\r", " ")
+    new_str = new_str.replace('"', " ")
+    while new_str.find("  ") >= 0:
+        new_str = new_str.replace("  ", " ")
     return new_str
 
 all_words = ['try', 'cut', 'run']
